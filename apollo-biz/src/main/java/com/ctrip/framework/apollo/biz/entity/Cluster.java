@@ -23,7 +23,7 @@ public class Cluster extends BaseEntity implements Comparable<Cluster> {
 
   @Column(name = "AppId", nullable = false)
   private String appId;
-
+  // 父 App 编号。用于灰度发布
   @Column(name = "ParentClusterId", nullable = false)
   private long parentClusterId;
 

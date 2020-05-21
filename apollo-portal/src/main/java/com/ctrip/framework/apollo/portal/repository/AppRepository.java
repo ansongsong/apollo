@@ -11,7 +11,9 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 import java.util.List;
 import java.util.Set;
 
-
+/**
+ *  App 的数据访问，即 DAO 。
+ */
 public interface AppRepository extends PagingAndSortingRepository<App, Long> {
 
   App findByAppId(String appId);

@@ -26,7 +26,7 @@ public class AppModel {
 
   @NotBlank(message = "ownerName cannot be blank")
   private String ownerName;
-
+  //需要授权管理员的编号集合
   private Set<String> admins;
 
   public String getName() {

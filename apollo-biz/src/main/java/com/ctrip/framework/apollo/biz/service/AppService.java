@@ -61,9 +61,10 @@ public class AppService {
     if (!isAppIdUnique(entity.getAppId())) {
       throw new ServiceException("appId not unique");
     }
+    // 保护代码，避免 App 对象中，已经有 id 属性。   // 置“空” App 对象，防御性编程，避免 App 对象中，已经有 id 属性
     entity.setId(0);//protection
     App app = appRepository.save(entity);
-
+    // 记录 Audit 到数据库中
     auditService.audit(App.class.getSimpleName(), app.getId(), Audit.OP.INSERT,
         app.getDataChangeCreatedBy());
 

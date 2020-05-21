@@ -9,18 +9,27 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
+/**
+ * Cluster Namespace 实体，是配置项的集合，类似于一个配置文件的概念
+ */
 @Entity
 @Table(name = "Namespace")
 @SQLDelete(sql = "Update Namespace set isDeleted = 1 where id = ?")
 @Where(clause = "isDeleted = 0")
 public class Namespace extends BaseEntity {
-
+  /**
+   * App 编号 {@link com.ctrip.framework.apollo.common.entity.App#appId}
+   */
   @Column(name = "appId", nullable = false)
   private String appId;
-
+  /**
+   * Cluster 名 {@link Cluster#name}
+   */
   @Column(name = "ClusterName", nullable = false)
   private String clusterName;
-
+  /**
+   * AppNamespace 名 {@link com.ctrip.framework.apollo.common.entity.AppNamespace#name}
+   */
   @Column(name = "NamespaceName", nullable = false)
   private String namespaceName;
 

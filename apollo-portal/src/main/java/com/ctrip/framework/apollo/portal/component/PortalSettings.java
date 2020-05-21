@@ -56,7 +56,7 @@ public class PortalSettings {
     for (Env env : allEnvs) {
       envStatusMark.put(env, true);
     }
-
+    // 循环检查 环境的健康状态
     ScheduledExecutorService
         healthCheckService =
         Executors.newScheduledThreadPool(1, ApolloThreadFactory.create("EnvHealthChecker", true));
@@ -71,6 +71,10 @@ public class PortalSettings {
     return allEnvs;
   }
 
+  /**
+   * 获得有效的 Env 数组
+   * @return
+   */
   public List<Env> getActiveEnvs() {
     List<Env> activeEnvs = new LinkedList<>();
     for (Env env : allEnvs) {
