@@ -9,13 +9,23 @@ import java.util.LinkedList;
 import java.util.List;
 import org.springframework.beans.BeanUtils;
 
-
+/**
+ * 配置变更内容构建器。
+ */
 public class ConfigChangeContentBuilder {
 
   private static final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss").create();
-
+  /**
+   * 创建 Item 集合
+   */
   private List<Item> createItems = new LinkedList<>();
+  /**
+   * 更新 Item 集合
+   */
   private List<ItemPair> updateItems = new LinkedList<>();
+  /**
+   * 删除 Item 集合
+   */
   private List<Item> deleteItems = new LinkedList<>();
 
 
@@ -41,10 +51,18 @@ public class ConfigChangeContentBuilder {
     return this;
   }
 
+  /**
+   * 判断是否有变化。当且仅当有变化才记录 Commit
+   * @return
+   */
   public boolean hasContent(){
     return !createItems.isEmpty() || !updateItems.isEmpty() || !deleteItems.isEmpty();
   }
 
+  /**
+   * 构建 Item 变化的 JSON 字符串
+   * @return
+   */
   public String build() {
     //因为事务第一段提交并没有更新时间,所以build时统一更新
     Date now = new Date();
@@ -65,8 +83,8 @@ public class ConfigChangeContentBuilder {
 
   static class ItemPair {
 
-    Item oldItem;
-    Item newItem;
+    Item oldItem; // 老
+    Item newItem; // 新
 
     public ItemPair(Item oldItem, Item newItem) {
       this.oldItem = oldItem;
@@ -74,6 +92,11 @@ public class ConfigChangeContentBuilder {
     }
   }
 
+  /**
+   * 克隆 Item 对象
+   * @param source
+   * @return
+   */
   Item cloneItem(Item source) {
     Item target = new Item();
 

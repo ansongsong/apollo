@@ -14,6 +14,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.springframework.stereotype.Component;
 
+/**
+ * 各种配置
+ */
 @Component
 public class BizConfig extends RefreshableConfig {
 

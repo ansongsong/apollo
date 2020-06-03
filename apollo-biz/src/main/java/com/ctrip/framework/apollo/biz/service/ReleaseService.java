@@ -98,7 +98,7 @@ public class ReleaseService {
 
   public Release findLatestActiveRelease(Namespace namespace) {
     return findLatestActiveRelease(namespace.getAppId(),
-                                   namespace.getClusterName(), namespace.getNamespaceName());
+                                   namespace.getClusterName(), namespace.getNamespaceName());  // IsAbandoned = False && Id DESC
 
   }
 
@@ -160,33 +160,34 @@ public class ReleaseService {
   @Transactional
   public Release publish(Namespace namespace, String releaseName, String releaseComment,
                          String operator, boolean isEmergencyPublish) {
-
+    // 校验锁定
     checkLock(namespace, isEmergencyPublish, operator);
-
+    // 获得 Namespace 的普通配置 Map
     Map<String, String> operateNamespaceItems = getNamespaceItems(namespace);
-
+    // 获得父 Namespace
     Namespace parentNamespace = namespaceService.findParentNamespace(namespace);
-
+    // 若有父 Namespace ，则是子 Namespace ，进行灰度发布
     //branch release
     if (parentNamespace != null) {
+      // 灰度发布使用的是分支
       return publishBranchNamespace(parentNamespace, namespace, operateNamespaceItems,
                                     releaseName, releaseComment, operator, isEmergencyPublish);
     }
-
+    // 获得子 Namespace 对象
     Namespace childNamespace = namespaceService.findChildNamespace(namespace);
-
+    // 获得上一次，并且有效的 Release 对象
     Release previousRelease = null;
     if (childNamespace != null) {
       previousRelease = findLatestActiveRelease(namespace);
     }
-
+    // 创建操作 Context
     //master release
     Map<String, Object> operationContext = Maps.newLinkedHashMap();
     operationContext.put(ReleaseOperationContext.IS_EMERGENCY_PUBLISH, isEmergencyPublish);
-
+    // 主干发布
     Release release = masterRelease(namespace, releaseName, releaseComment, operateNamespaceItems,
                                     operator, ReleaseOperation.NORMAL_RELEASE, operationContext);
-
+    // 若有子 Namespace 时，自动将主干合并到子 Namespace ，并进行一次子 Namespace 的发布
     //merge to branch and auto release
     if (childNamespace != null) {
       mergeFromMasterAndPublishBranch(namespace, childNamespace, operateNamespaceItems,
@@ -240,8 +241,10 @@ public class ReleaseService {
   }
 
   private void checkLock(Namespace namespace, boolean isEmergencyPublish, String operator) {
-    if (!isEmergencyPublish) {
+    if (!isEmergencyPublish) {  // 非紧急发布
+      // 获得 NamespaceLock 对象
       NamespaceLock lock = namespaceLockService.findLock(namespace.getId());
+      // 校验锁定人是否是当前管理员。若是，抛出 BadRequestException 异常
       if (lock != null && lock.getDataChangeCreatedBy().equals(operator)) {
         throw new BadRequestException("Config can not be published by yourself.");
       }
@@ -313,11 +316,13 @@ public class ReleaseService {
   private Release masterRelease(Namespace namespace, String releaseName, String releaseComment,
                                 Map<String, String> configurations, String operator,
                                 int releaseOperation, Map<String, Object> operationContext) {
+    // 获得最后有效的 Release 对象
     Release lastActiveRelease = findLatestActiveRelease(namespace);
     long previousReleaseId = lastActiveRelease == null ? 0 : lastActiveRelease.getId();
+    // 创建 Release 对象，并保存
     Release release = createRelease(namespace, releaseName, releaseComment,
                                     configurations, operator);
-
+    // 创建 ReleaseHistory 对象，并保存
     releaseHistoryService.createReleaseHistory(namespace.getAppId(), namespace.getClusterName(),
                                                namespace.getNamespaceName(), namespace.getClusterName(),
                                                release.getId(), previousReleaseId, releaseOperation,
@@ -381,7 +386,9 @@ public class ReleaseService {
 
 
   private Map<String, String> getNamespaceItems(Namespace namespace) {
+    // 读取 Namespace 的 Item 集合
     List<Item> items = itemService.findItemsWithOrdered(namespace.getId());
+    // 生成普通配置 Map 。过滤掉注释和空行的配置项
     Map<String, String> configurations = new LinkedHashMap<>();
     for (Item item : items) {
       if (StringUtils.isEmpty(item.getKey())) {
@@ -395,6 +402,7 @@ public class ReleaseService {
 
   private Release createRelease(Namespace namespace, String name, String comment,
                                 Map<String, String> configurations, String operator) {
+    // 创建 Release 对象
     Release release = new Release();
     release.setReleaseKey(ReleaseKeyGenerator.generateReleaseKey(namespace));
     release.setDataChangeCreatedTime(new Date());
@@ -405,10 +413,12 @@ public class ReleaseService {
     release.setAppId(namespace.getAppId());
     release.setClusterName(namespace.getClusterName());
     release.setNamespaceName(namespace.getNamespaceName());
-    release.setConfigurations(gson.toJson(configurations));
+    release.setConfigurations(gson.toJson(configurations)); // 使用 Gson ，将配置 Map 格式化成字符串。
+    // 保存 Release 对象
     release = releaseRepository.save(release);
-
+    // 释放 NamespaceLock
     namespaceLockService.unlock(namespace.getId());
+    // 记录 Audit 到数据库中
     auditService.audit(Release.class.getSimpleName(), release.getId(), Audit.OP.INSERT,
                        release.getDataChangeCreatedBy());
 

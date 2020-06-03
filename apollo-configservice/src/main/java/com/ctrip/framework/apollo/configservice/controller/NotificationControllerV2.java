@@ -49,12 +49,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 /**
+ * NotificationControllerV2 得到配置发布的 AppId+Cluster+Namespace 后，会通知对应的客户端
  * @author Jason Song(song_s@ctrip.com)
  */
 @RestController
 @RequestMapping("/notifications/v2")
 public class NotificationControllerV2 implements ReleaseMessageListener {
   private static final Logger logger = LoggerFactory.getLogger(NotificationControllerV2.class);
+  /**
+   * Watch Key 与 DeferredResultWrapper 的 Multimap
+   *
+   * Key：Watch Key  ReleaseMessage.message
+   * Value：DeferredResultWrapper 数组
+   */
   private final Multimap<String, DeferredResultWrapper> deferredResults =
       Multimaps.synchronizedSetMultimap(TreeMultimap.create(String.CASE_INSENSITIVE_ORDER, Ordering.natural()));
   private static final Splitter STRING_SPLITTER =
@@ -62,7 +69,9 @@ public class NotificationControllerV2 implements ReleaseMessageListener {
   private static final Type notificationsTypeReference =
       new TypeToken<List<ApolloConfigNotification>>() {
       }.getType();
-
+  /**
+   * 大量通知分批执行 ExecutorService
+   */
   private final ExecutorService largeNotificationBatchExecutorService;
 
   private final WatchKeysUtil watchKeysUtil;
@@ -97,6 +106,7 @@ public class NotificationControllerV2 implements ReleaseMessageListener {
       @RequestParam(value = "notifications") String notificationsAsString,
       @RequestParam(value = "dataCenter", required = false) String dataCenter,
       @RequestParam(value = "ip", required = false) String clientIp) {
+    // 解析 notificationsAsString 参数，创建 ApolloConfigNotification 数组。
     List<ApolloConfigNotification> notifications = null;
 
     try {
@@ -109,7 +119,7 @@ public class NotificationControllerV2 implements ReleaseMessageListener {
     if (CollectionUtils.isEmpty(notifications)) {
       throw new BadRequestException("Invalid format of notifications: " + notificationsAsString);
     }
-
+    // 创建 DeferredResultWrapper 对象
     DeferredResultWrapper deferredResultWrapper = new DeferredResultWrapper(bizConfig.longPollingTimeoutInMilli());
     Set<String> namespaces = Sets.newHashSet();
     Map<String, Long> clientSideNotifications = Maps.newHashMap();
@@ -297,7 +307,9 @@ public class NotificationControllerV2 implements ReleaseMessageListener {
     }
     logger.debug("Notification completed");
   }
-
+  /**
+   * 通过 ReleaseMessage 的消息内容，获得对应 Namespace 的名字
+   */
   private static final Function<String, String> retrieveNamespaceFromReleaseMessage =
       releaseMessage -> {
         if (Strings.isNullOrEmpty(releaseMessage)) {

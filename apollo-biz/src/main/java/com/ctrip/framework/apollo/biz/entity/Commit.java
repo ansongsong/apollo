@@ -1,5 +1,6 @@
 package com.ctrip.framework.apollo.biz.entity;
 
+import com.ctrip.framework.apollo.biz.utils.ConfigChangeContentBuilder;
 import com.ctrip.framework.apollo.common.entity.BaseEntity;
 
 import org.hibernate.annotations.SQLDelete;
@@ -10,25 +11,41 @@ import javax.persistence.Entity;
 import javax.persistence.Lob;
 import javax.persistence.Table;
 
+/**
+ * 记录 Item 的 KV 变更历史
+ */
 @Entity
 @Table(name = "Commit")
 @SQLDelete(sql = "Update Commit set isDeleted = 1 where id = ?")
 @Where(clause = "isDeleted = 0")
 public class Commit extends BaseEntity {
-
+  /**
+   *  变更集合。
+   *  JSON 格式化，使用 {@link ConfigChangeContentBuilder#build()} 生成
+   * {"createItems":[],"updateItems":[{"oldItem":{"namespaceId":32,"key":"key4","value":"value4123","comment":"123","lineNum":4,"id":15,"isDeleted":false,"dataChangeCreatedBy":"apollo","dataChangeCreatedTime":"2018-04-27 16:49:59","dataChangeLastModifiedBy":"apollo","dataChangeLastModifiedTime":"2018-04-27 22:37:52"},"newItem":{"namespaceId":32,"key":"key4","value":"value41234","comment":"123","lineNum":4,"id":15,"isDeleted":false,"dataChangeCreatedBy":"apollo","dataChangeCreatedTime":"2018-04-27 16:49:59","dataChangeLastModifiedBy":"apollo","dataChangeLastModifiedTime":"2018-04-27 22:38:58"}}],"deleteItems":[]}
+   *
+   */
   @Lob
   @Column(name = "ChangeSets", nullable = false)
   private String changeSets;
-
+  /**
+   * App 编号
+   */
   @Column(name = "AppId", nullable = false)
   private String appId;
-
+  /**
+   * Cluster 名字
+   */
   @Column(name = "ClusterName", nullable = false)
   private String clusterName;
-
+  /**
+   * Namespace 名字
+   */
   @Column(name = "NamespaceName", nullable = false)
   private String namespaceName;
-
+  /**
+   * 备注
+   */
   @Column(name = "Comment")
   private String comment;
 
